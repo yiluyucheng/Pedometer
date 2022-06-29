@@ -46,7 +46,7 @@ class BeforeOrAfterCalendarView(mContext: Context) : RelativeLayout(mContext) {
             val curItemDate = dateList[i]
             val itemView: RecordsCalenderItemView
             itemView = if (day == TimeUtil.getCurrentDay()) {
-                RecordsCalenderItemView(context , "今天", day.toString(), i, curItemDate)
+                RecordsCalenderItemView(context , "today", day.toString(), i, curItemDate)
             } else {
                 RecordsCalenderItemView(
                     context,

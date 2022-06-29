@@ -11,6 +11,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.*
+import android.util.Log
 import androidx.annotation.Nullable
 import com.fyspring.stepcounter.R
 import com.fyspring.stepcounter.bean.StepEntity
@@ -55,6 +56,7 @@ class StepService : Service(), SensorEventListener {
 
     override fun onCreate() {
         super.onCreate()
+        Log.d("hfj","========onCreate=================")
         initBroadcastReceiver()
         Thread(Runnable { getStepDetector() }).start()
         initTodayData()
@@ -67,6 +69,7 @@ class StepService : Service(), SensorEventListener {
 
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        Log.d("hfj","========onStartCommand=================")
         /**
          * 此处设将Service为前台，不然当APP结束以后很容易被GC给干掉，
          * 这也就是大多数音乐播放器会在状态栏设置一个原理大都是相通的
@@ -173,6 +176,7 @@ class StepService : Service(), SensorEventListener {
      * 初始化当天数据
      */
     private fun initTodayData() {
+        Log.d("hfj","========initTodayData=================")
         //获取当前时间
         currentDate = TimeUtil.getCurrentDate()
         //获取数据库
@@ -187,6 +191,7 @@ class StepService : Service(), SensorEventListener {
      * 监听晚上0点变化初始化数据
      */
     private fun isNewDay() {
+        Log.d("hfj","========isNewDay=================")
         val time = "00:00"
         if (time == SimpleDateFormat("HH:mm").format(Date()) || currentDate != TimeUtil.getCurrentDate()) {
             initTodayData()
@@ -213,6 +218,7 @@ class StepService : Service(), SensorEventListener {
      * 添加传感器监听
      */
     private fun addCountStepListener() {
+        Log.d("hfj","========addCountStepListener=================")
         val countSensor = sensorManager!!.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         val detectorSensor = sensorManager!!.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
         if (countSensor != null) {
@@ -237,6 +243,7 @@ class StepService : Service(), SensorEventListener {
      * 只有当用户关机以后，该数据才会清空，所以需要做数据保护
      */
     override fun onSensorChanged(event: SensorEvent) {
+        Log.d("hfj","========onSensorChanged=================")
         if (stepSensor == 0) {
             val tempStep = event.values[0].toInt()
             if (!hasRecord) {
@@ -260,11 +267,11 @@ class StepService : Service(), SensorEventListener {
 
     }
 
-
     /**
      * 保存当天的数据到数据库中，并去刷新通知栏
      */
     private fun saveStepData() {
+        Log.d("hfj","========saveStepData=================")
         //查询数据库中的数据
         var entity = stepDataDao?.getCurDataByDate(currentDate!!)
         //为空则说明还没有该天的数据，有则说明已经开始当天的计步了
@@ -299,9 +306,9 @@ class StepService : Service(), SensorEventListener {
                     R.mipmap.ic_launcher
                 )
             )
-            ?.setContentTitle("今日步数" + currentStep + "步")
+            ?.setContentTitle("today Steps" + currentStep + "step")
             ?.setSmallIcon(R.mipmap.ic_launcher)
-            ?.setContentText("加油，要记得勤加运动哦")
+            ?.setContentText("Come on, remember to exercise diligently")
         // 获取构建好的Notification
         val stepNotification = builder?.build()
         //调用更新
@@ -310,6 +317,7 @@ class StepService : Service(), SensorEventListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d("hfj","========onDestroy=================")
         //主界面中需要手动调用stop方法service才会结束
         stopForeground(true)
         unregisterReceiver(mInfoReceiver)

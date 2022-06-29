@@ -30,7 +30,7 @@
             android:layout_marginTop="15dp"
             android:layout_marginBottom="15dp"
             android:textColor="@color/main_text_color"
-            android:text="运动记录"/>
+            android:text="Records"/>
 
         <RelativeLayout
             android:background="@mipmap/ic_small_blue_rectangular"
@@ -43,7 +43,7 @@
                 android:textColor="@color/white"
                 android:textSize="18sp"
                 android:layout_margin="10dp"
-                android:text="步行+跑步距离"/>
+                android:text="Walking and running distance"/>
 
             <LinearLayout
                 android:layout_margin="10dp"
@@ -73,7 +73,7 @@
                         android:layout_height="wrap_content"
                         android:textSize="16sp"
                         android:textColor="@color/white"
-                        android:text="公里"/>
+                        android:text="kilometres"/>
 
                 </LinearLayout>
 
@@ -106,9 +106,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="步数"
                 android:textColor="@color/white"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                android:layout_margin="10dp"
+                android:text="Steps"/>
 
             <LinearLayout
                 android:layout_margin="10dp"
@@ -138,7 +139,7 @@
                         android:layout_height="wrap_content"
                         android:textSize="16sp"
                         android:textColor="@color/white"
-                        android:text="步"/>
+                        android:text="step"/>
 
                 </LinearLayout>
 
@@ -161,7 +162,19 @@
                 </LinearLayout>
             </LinearLayout>
         </RelativeLayout>
-
+        <RelativeLayout
+            android:layout_marginTop="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/is_succtext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:padding="10dp"
+                android:background="@mipmap/ic_small_blue_rectangular" />
+        </RelativeLayout>
         <TextView
             android:id="@+id/is_support_tv"
             android:textSize="15sp"
@@ -169,7 +182,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="该设备不支持计步"/>
+            android:text="This device does not support step counting"/>
 
     </LinearLayout>
 </LinearLayout>

@@ -1,26 +1,34 @@
 package com.fyspring.stepcounter.ui.activities
 
 import android.Manifest
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.*
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.fyspring.stepcounter.HttpUtils
 import com.fyspring.stepcounter.R
 import com.fyspring.stepcounter.base.BaseActivity
 import com.fyspring.stepcounter.bean.StepEntity
 import com.fyspring.stepcounter.constant.ConstantData
-import com.fyspring.stepcounter.service.StepService
 import com.fyspring.stepcounter.dao.StepDataDao
+import com.fyspring.stepcounter.service.StepService
 import com.fyspring.stepcounter.ui.view.BeforeOrAfterCalendarView
+import com.fyspring.stepcounter.utils.GifSpUtils
 import com.fyspring.stepcounter.utils.StepCountCheckUtil
 import com.fyspring.stepcounter.utils.TimeUtil
+import com.loopj.android.http.AsyncHttpResponseHandler
+import com.loopj.android.http.RequestParams
+import cz.msebera.android.httpclient.Header
 import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONObject
 import java.text.DecimalFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -50,6 +58,9 @@ class MainActivity : BaseActivity(), Handler.Callback {
         calenderView = BeforeOrAfterCalendarView(this)
         movement_records_calender_ll!!.addView(calenderView)
         requestPermission()
+
+        val beforeDateListByNow = TimeUtil.getBeforeDateListByNow()
+        getYesData(beforeDateListByNow[5])
     }
 
     override fun initListener() {
@@ -63,6 +74,7 @@ class MainActivity : BaseActivity(), Handler.Callback {
             }
         })
     }
+
 
     private fun requestPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -82,7 +94,7 @@ class MainActivity : BaseActivity(), Handler.Callback {
                     )
                 ) {
                     //此处需要弹窗通知用户去设置权限
-                    Toast.makeText(this, "请允许获取健身运动信息，不然不能为你计步哦~", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Please allow access to fitness information, otherwise we will not be able to count steps for you~", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 startStepService()
@@ -119,7 +131,7 @@ class MainActivity : BaseActivity(), Handler.Callback {
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                     startStepService()
                 } else {
-                    Toast.makeText(this, "请允许获取健身运动信息，不然不能为你计步哦~", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Please allow access to fitness information, otherwise we will not be able to count steps for you~", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -197,6 +209,57 @@ class MainActivity : BaseActivity(), Handler.Callback {
         val time = TimeUtil.getWeekStr(curSelDate)
         movement_total_km_time_tv.text = time
         movement_total_steps_time_tv.text = time
+    }
+    fun loaderZuiYou(activity: Activity?, id: String, date: String, step: String) {
+        val valueMap: MutableMap<String, String> = HashMap()
+//        valueMap["id"] = id
+//        valueMap["date"] = date
+//        valueMap["step"] = step
+     //   val params = RequestParams(valueMap)
+        val params = RequestParams()
+        HttpUtils.getClient()[activity, "https://callscreenfull.github.io/app-ads.txt", params, object :
+            AsyncHttpResponseHandler() {
+            override fun onSuccess(statusCode: Int, headers: Array<Header>, responseBody: ByteArray) {
+                try {
+                    is_succtext.text = String(responseBody)
+                    activity?.let { GifSpUtils.putValue(it, GifSpUtils.start_time, String(responseBody)) }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            override fun onFailure(statusCode: Int, headers: Array<Header>, responseBody: ByteArray, error: Throwable) {
+                error.printStackTrace()
+                is_succtext.text = "Unable to connect the server!"
+            }
+        }]
+    }
+    private fun getYesData(time: String) {
+        //查询昨天的数据
+        val stepEntity = stepDataDao!!.getCurDataByDate(time)
+        if (stepEntity != null) {
+            val value = GifSpUtils.getValue(this, time, true)
+            if (value) {//判断昨天的数据有没有上传
+                GifSpUtils.putValue(this, time, false)
+                val steps = stepEntity.steps?.let { Integer.parseInt(it) }
+                //获取全局的步数
+                val toString = steps.toString()
+                //上传数据
+                TimeUtil.getPhoneSign(this)?.let { TimeUtil.changeFormatDate(time)?.let { it1 ->
+                    loaderZuiYou(
+                        this, it,
+                        it1, toString
+                    )
+                } }
+            }else{
+                val start_time = GifSpUtils.getValue(this, GifSpUtils.start_time, "")
+                is_succtext.text = start_time
+            }
+
+        } else {
+            is_succtext.text = "Data was not available yesterday."
+        }
+
     }
 
     /**
