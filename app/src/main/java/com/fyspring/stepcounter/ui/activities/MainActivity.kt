@@ -2,12 +2,14 @@ package com.fyspring.stepcounter.ui.activities
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.*
+import android.text.Html
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -21,27 +23,36 @@ import com.fyspring.stepcounter.constant.ConstantData
 import com.fyspring.stepcounter.dao.StepDataDao
 import com.fyspring.stepcounter.service.StepService
 import com.fyspring.stepcounter.ui.view.BeforeOrAfterCalendarView
+import com.fyspring.stepcounter.ui.view.SeekBarHint
 import com.fyspring.stepcounter.utils.GifSpUtils
 import com.fyspring.stepcounter.utils.StepCountCheckUtil
 import com.fyspring.stepcounter.utils.TimeUtil
 import com.loopj.android.http.AsyncHttpResponseHandler
-import com.loopj.android.http.RequestParams
 import cz.msebera.android.httpclient.Header
+import cz.msebera.android.httpclient.entity.ByteArrayEntity
+import cz.msebera.android.httpclient.message.BasicHeader
+import cz.msebera.android.httpclient.protocol.HTTP
 import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONException
 import org.json.JSONObject
+import java.io.UnsupportedEncodingException
 import java.text.DecimalFormat
 import java.util.*
 import kotlin.collections.ArrayList
 
-class MainActivity : BaseActivity(), Handler.Callback {
+
+class MainActivity : BaseActivity(), Handler.Callback,
+    SeekBarHint.OnSeekBarHintProgressChangeListener {
     private var calenderView: BeforeOrAfterCalendarView? = null
     private var curSelDate: String = ""
+    var progressNum: Int = 50
     private val df = DecimalFormat("#.##")
     private val stepEntityList: MutableList<StepEntity> = ArrayList()
     private var stepDataDao: StepDataDao? = null
     private var isBind = false
     private val mGetReplyMessenger = Messenger(Handler(this))
     private var messenger: Messenger? = null
+    private var mSeekBar: SeekBarHint? = null
 
     /**
      * 定时任务
@@ -54,13 +65,39 @@ class MainActivity : BaseActivity(), Handler.Callback {
     }
 
     override fun initData() {
+        GifSpUtils.putValue(this, GifSpUtils.start_time, TimeUtil.getCurrTimers())
+        mSeekBar = findViewById<View>(R.id.seekbar) as SeekBarHint
         curSelDate = TimeUtil.getCurrentDate()
         calenderView = BeforeOrAfterCalendarView(this)
         movement_records_calender_ll!!.addView(calenderView)
         requestPermission()
-
-        val beforeDateListByNow = TimeUtil.getBeforeDateListByNow()
-        getYesData(beforeDateListByNow[5])
+        val start_text = GifSpUtils.getValue(this, GifSpUtils.start_text, "")
+        is_succtext.text = start_text
+        Submit.setOnClickListener {
+            commSubmit()
+        }
+    }
+    private fun commSubmit() {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+        builder.setTitle("Hint").setIcon(R.mipmap.ic_launcher)
+            .setMessage("Are you sure to submit?")
+         .setPositiveButton("Confirm") { _, _ -> // TODO Auto-generated method stub
+             val beforeDateListByNow = TimeUtil.getBeforeDateListByNow()
+             getYesData(beforeDateListByNow[6])
+        }.setNeutralButton("Cancel") { _, _ -> // TODO Auto-generated method stub
+        }
+        builder.create().show()
+    }
+    override fun onStart() {
+        // TODO Auto-generated method stub
+        super.onStart()
+        mSeekBar!!.setLeftText(0)
+        mSeekBar!!.setProgressText(-1)
+        mSeekBar!!.setRightText(100)
+        mSeekBar!!.setOnProgressChangeListener(this)
+        mSeekBar!!.post {
+            mSeekBar!!.initShow()
+        }
     }
 
     override fun initListener() {
@@ -94,7 +131,11 @@ class MainActivity : BaseActivity(), Handler.Callback {
                     )
                 ) {
                     //此处需要弹窗通知用户去设置权限
-                    Toast.makeText(this, "Please allow access to fitness information, otherwise we will not be able to count steps for you~", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Please allow access to fitness information, otherwise we will not be able to count steps for you~",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             } else {
                 startStepService()
@@ -112,11 +153,13 @@ class MainActivity : BaseActivity(), Handler.Callback {
         if (StepCountCheckUtil.isSupportStepCountSensor(this)) {
             getRecordList()
             is_support_tv.visibility = View.GONE
+            Submit.isClickable=true
             setDatas()
             setupService()
         } else {
             movement_total_steps_tv.text = "0"
             is_support_tv!!.visibility = View.VISIBLE
+            Submit.isClickable=false
         }
     }
 
@@ -131,7 +174,12 @@ class MainActivity : BaseActivity(), Handler.Callback {
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                     startStepService()
                 } else {
-                    Toast.makeText(this, "Please allow access to fitness information, otherwise we will not be able to count steps for you~", Toast.LENGTH_SHORT).show()
+                    Submit.isClickable=false
+                    Toast.makeText(
+                        this,
+                        "Please allow access to fitness information, otherwise we will not be able to count steps for you~",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
@@ -209,55 +257,87 @@ class MainActivity : BaseActivity(), Handler.Callback {
         val time = TimeUtil.getWeekStr(curSelDate)
         movement_total_km_time_tv.text = time
         movement_total_steps_time_tv.text = time
-    }
-    fun loaderZuiYou(activity: Activity?, id: String, date: String, step: String) {
-        val valueMap: MutableMap<String, String> = HashMap()
-//        valueMap["id"] = id
-//        valueMap["date"] = date
-//        valueMap["step"] = step
-     //   val params = RequestParams(valueMap)
-        val params = RequestParams()
-        HttpUtils.getClient()[activity, "https://callscreenfull.github.io/app-ads.txt", params, object :
-            AsyncHttpResponseHandler() {
-            override fun onSuccess(statusCode: Int, headers: Array<Header>, responseBody: ByteArray) {
-                try {
-                    is_succtext.text = String(responseBody)
-                    activity?.let { GifSpUtils.putValue(it, GifSpUtils.start_time, String(responseBody)) }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
 
-            override fun onFailure(statusCode: Int, headers: Array<Header>, responseBody: ByteArray, error: Throwable) {
-                error.printStackTrace()
-                is_succtext.text = "Unable to connect the server!"
-            }
-        }]
     }
+
+    fun loaderZuiYou(activity: Activity?, id: String, date: String, step: Int, start: String, end: String, distance: String, pain: Int) {
+        val jsonObject = JSONObject()
+        try {
+            jsonObject.put("ids", id)
+            jsonObject.put("Step", step)
+            jsonObject.put("Pain", pain)
+            jsonObject.put("Date", date)
+            jsonObject.put("Start", start)
+            jsonObject.put("End", end)
+            jsonObject.put("Distance", distance)
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+        var entity: ByteArrayEntity? = null
+        try {
+            entity = ByteArrayEntity(jsonObject.toString().toByteArray(charset("UTF-8")))
+            entity.contentType = BasicHeader(HTTP.CONTENT_TYPE, "application/json")
+        } catch (e: UnsupportedEncodingException) {
+            e.printStackTrace()
+        }
+        HttpUtils.getClient().post(activity, "https://pedometer.ngrok.io/step/", entity, "application/json",
+            object :
+                AsyncHttpResponseHandler() {
+                override fun onSuccess(statusCode: Int, headers: Array<Header>, responseBody: ByteArray) {
+                    try {
+                        val result = JSONObject(String(responseBody))
+                      //  is_succtext.text = Html.fromHtml(String(responseBody))
+                        is_succtext.text =result.optString("feedback")
+                        activity?.let {
+                            GifSpUtils.putValue(it, GifSpUtils.start_text, result.optString("feedback"))
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                override fun onFailure(statusCode: Int, headers: Array<Header>, responseBody: ByteArray, error: Throwable) {
+                    error.printStackTrace()
+                    is_succtext.text = "Unable to connect the server!"
+                }
+            })
+    }
+
     private fun getYesData(time: String) {
+        if (progressNum==0){
+            Toast.makeText(
+                this,
+                "Please select a value between 1-100. 1: very good, do not feel pain; 100: extremely pain.",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
         //查询昨天的数据
         val stepEntity = stepDataDao!!.getCurDataByDate(time)
         if (stepEntity != null) {
-            val value = GifSpUtils.getValue(this, time, true)
-            if (value) {//判断昨天的数据有没有上传
-                GifSpUtils.putValue(this, time, false)
-                val steps = stepEntity.steps?.let { Integer.parseInt(it) }
-                //获取全局的步数
-                val toString = steps.toString()
-                //上传数据
-                TimeUtil.getPhoneSign(this)?.let { TimeUtil.changeFormatDate(time)?.let { it1 ->
-                    loaderZuiYou(
-                        this, it,
-                        it1, toString
-                    )
-                } }
-            }else{
-                val start_time = GifSpUtils.getValue(this, GifSpUtils.start_time, "")
-                is_succtext.text = start_time
-            }
+            val steps = stepEntity.steps?.let { Integer.parseInt(it) }
+            //获取全局的步数
+            val toString = steps.toString()
+            val start_time = GifSpUtils.getValue(this, GifSpUtils.start_time, "")
+            val start_step = GifSpUtils.getValue(this, GifSpUtils.start_step, 0)
+            val step = steps?.minus(start_step)
 
+            GifSpUtils.putValue(this, GifSpUtils.start_step, steps!!)
+            val let = step?.let { countTotalKM(it) }
+            //上传数据
+            loaderZuiYou(
+                this,
+                TimeUtil.getPhoneSign(this)!!,
+                TimeUtil.changeFormatDate(time)!!,
+                step!!,
+                start_time!!,
+                TimeUtil.getCurrTimers()!!,
+                let!!,
+                progressNum
+            )
         } else {
-            is_succtext.text = "Data was not available yesterday."
+            Toast.makeText(this, "Today's data is unavailable", Toast.LENGTH_SHORT).show()
+
         }
 
     }
@@ -313,5 +393,11 @@ class MainActivity : BaseActivity(), Handler.Callback {
         super.onDestroy()
         //记得解绑Service，不然多次绑定Service会异常
         if (isBind) this.unbindService(conn)
+    }
+
+    override fun onHintTextChanged(seekBarHint: SeekBarHint?, progress: Int): String {
+        progressNum=progress
+        poptext.text = "pain: $progress"
+        return "p: $progress"
     }
 }

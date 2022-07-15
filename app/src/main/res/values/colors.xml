@@ -8,4 +8,5 @@
     <color name="light_blue">#44CDC5</color>
     <color name="main_text_color">#333333</color>
     <color name="gray_default_dark">#666666</color>
+    <color name="green">#39ac69</color>
 </resources>

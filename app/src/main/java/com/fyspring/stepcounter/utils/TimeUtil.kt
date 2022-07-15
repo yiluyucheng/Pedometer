@@ -246,6 +246,15 @@ class TimeUtil {
 
             return weekStrings[w]
         }
+        /**
+         * 获取当前的时间
+         *
+         * @return
+         */
+        fun getCurrTimers(): String? {
+            val now = Date()
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+            return dateFormat.format(now)
+        }
     }
-
 }

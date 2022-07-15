@@ -8,6 +8,8 @@ class GifSpUtils {
 
         private val SharedPreferences = "GifSpUtils"
         val start_time = "start_time"
+        val start_text = "start_text"
+        val start_step = "start_step"
         fun removeValue(context: Context, key: String) {
             val sp = context.getSharedPreferences(SharedPreferences, Context.MODE_PRIVATE).edit()
             sp.remove(key)
