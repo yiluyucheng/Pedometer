@@ -1,5 +1,10 @@
 package com.fyspring.stepcounter.utils
 
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
+import android.telephony.TelephonyManager
+import android.text.TextUtils
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -55,12 +60,71 @@ class TimeUtil {
         }
 
         /**
+         * 获取手机唯一标示
+         *
+         * @param context
+         * @return
+         */
+        fun getPhoneInfor(context: Context): String? {
+            val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            return tm.deviceId
+        }
+        fun getPhoneSign(context: Context): String? {
+            val deviceId = StringBuilder()
+            // 渠道标志
+            deviceId.append("a")
+            try {
+                //IMEI（imei）
+                val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                val imei = tm.deviceId
+                if (!TextUtils.isEmpty(imei)) {
+                    deviceId.append("imei")
+                    deviceId.append(imei)
+                    return deviceId.toString()
+                }
+                //序列号（sn）
+                val sn = tm.simSerialNumber
+                if (!TextUtils.isEmpty(sn)) {
+                    deviceId.append("sn")
+                    deviceId.append(sn)
+                    return deviceId.toString()
+                }
+                //如果上面都没有， 则生成一个id：随机码
+                val uuid = getUUID(context)
+                if (!TextUtils.isEmpty(uuid)) {
+                    deviceId.append("id")
+                    deviceId.append(uuid)
+                    return deviceId.toString()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                deviceId.append("id").append(getUUID(context))
+            }
+            return deviceId.toString()
+        }
+
+        /**
+         * 得到全局唯一UUID
+         */
+        private var uuid: String? = null
+        fun getUUID(context: Context): String? {
+            val mShare: SharedPreferences =context. getSharedPreferences("uuid", MODE_PRIVATE)
+            if (mShare != null) {
+                uuid = mShare.getString("uuid", "")
+            }
+            if (TextUtils.isEmpty(uuid)) {
+                uuid = UUID.randomUUID().toString()
+                mShare.edit().putString("uuid", uuid).commit()
+            }
+            return uuid
+        }
+        /**
          * 返回当前的时间
          * @return  今天 09:48
          */
         private fun getCurTime(): String {
             val dFormat = SimpleDateFormat("HH:mm")
-            return "今天 " + dFormat.format(System.currentTimeMillis())
+            return "today " + dFormat.format(System.currentTimeMillis())
         }
 
         /**
@@ -116,7 +180,7 @@ class TimeUtil {
          * @return yyyy年MM月dd日
          */
         fun getCurrentDate(): String {
-            return dateFormat.format(mCalendar.getTime())
+            return dateFormat.format(mCalendar.time)
         }
 
 
@@ -182,6 +246,15 @@ class TimeUtil {
 
             return weekStrings[w]
         }
+        /**
+         * 获取当前的时间
+         *
+         * @return
+         */
+        fun getCurrTimers(): String? {
+            val now = Date()
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+            return dateFormat.format(now)
+        }
     }
-
 }
