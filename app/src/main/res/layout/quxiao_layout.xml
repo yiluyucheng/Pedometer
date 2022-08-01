@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/pop_selector"
+    android:gravity="center"
+    android:id="@+id/dialog_view"
+    android:orientation="vertical">
+    <LinearLayout
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <RelativeLayout
+            android:id="@+id/mbm_rlxm"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="20dp"
+            android:background="#FFFFFF">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="15dp"
+                android:text="Weight(kg)"
+                android:textColor="#333333"
+                android:textSize="15dp" />
+
+            <EditText
+                android:id="@+id/mbm_etxm"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="right|center_vertical"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="30dp"
+                android:background="#00000000"
+                android:gravity="right|center_vertical"
+                android:hint="Please enter your weight"
+                android:inputType="number"
+                android:textColor="#444444"
+                android:textColorHint="#a9a9a9"
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_alignParentBottom="true"
+                android:background="#F7F6F6" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/mbm_rldh"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@id/mbm_rlxm"
+            android:background="#FFFFFF">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="15dp"
+                android:text="Height(cm)"
+                android:textColor="#333333"
+                android:textSize="15dp" />
+
+            <EditText
+                android:id="@+id/mbm_etdh"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="right|center_vertical"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="30dp"
+                android:background="#00000000"
+                android:gravity="right|center_vertical"
+                android:hint="Please enter height"
+                android:inputType="number"
+                android:textColor="#444444"
+                android:textColorHint="#a9a9a9"
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_alignParentBottom="true"
+                android:background="#F7F6F6" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/mbm_rlxb"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@id/mbm_rldh"
+            android:background="#FFFFFF">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="15dp"
+                android:text="Sex"
+                android:textColor="#333333"
+                android:textSize="15dp" />
+
+            <TextView
+                android:id="@+id/mbm_etxb"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="right|center_vertical"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="30dp"
+                android:background="#00000000"
+                android:gravity="right|center_vertical"
+                android:hint="Please select gender"
+                android:textColor="#444444"
+                android:textColorHint="#a9a9a9"
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_alignParentBottom="true"
+                android:background="#F7F6F6" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/mbm_rlnl"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_below="@id/mbm_rlxb"
+            android:background="#FFFFFF">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="15dp"
+                android:text="Age(year)"
+                android:textColor="#333333"
+                android:textSize="15dp" />
+
+            <EditText
+                android:id="@+id/mbm_etnl"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="right|center_vertical"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="30dp"
+                android:background="#00000000"
+                android:gravity="right|center_vertical"
+                android:hint="Please enter age"
+                android:inputType="number"
+                android:textColor="#444444"
+                android:textColorHint="#a9a9a9"
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_alignParentBottom="true"
+                android:background="#F7F6F6" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/mbm_submit"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="20dp"
+            android:layout_gravity="center"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_ok">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="Finish"
+                android:textColor="#FFF"
+                android:textSize="16dp" />
+        </RelativeLayout>
+    </LinearLayout>
+
+
+</LinearLayout>

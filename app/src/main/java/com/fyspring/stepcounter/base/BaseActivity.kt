@@ -35,10 +35,8 @@ abstract class BaseActivity : AppCompatActivity() {
 
     private fun init() {
         initData()
-        initListener()
     }
 
     abstract fun getLayoutId(): Int
     abstract fun initData()
-    abstract fun initListener()
 }

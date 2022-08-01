@@ -1,6 +1,7 @@
 package com.fyspring.stepcounter.ui.activities
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.ComponentName
@@ -8,15 +9,17 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import android.os.*
-import android.text.Html
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.fyspring.stepcounter.HttpUtils
+import com.fyspring.stepcounter.OnSuccesListener
 import com.fyspring.stepcounter.R
+import com.fyspring.stepcounter.WindowUtils
 import com.fyspring.stepcounter.base.BaseActivity
 import com.fyspring.stepcounter.bean.StepEntity
 import com.fyspring.stepcounter.constant.ConstantData
@@ -42,7 +45,7 @@ import kotlin.collections.ArrayList
 
 
 class MainActivity : BaseActivity(), Handler.Callback,
-    SeekBarHint.OnSeekBarHintProgressChangeListener {
+    SeekBarHint.OnSeekBarHintProgressChangeListener, OnSuccesListener {
     private var calenderView: BeforeOrAfterCalendarView? = null
     private var curSelDate: String = ""
     var progressNum: Int = 50
@@ -53,6 +56,11 @@ class MainActivity : BaseActivity(), Handler.Callback,
     private val mGetReplyMessenger = Messenger(Handler(this))
     private var messenger: Messenger? = null
     private var mSeekBar: SeekBarHint? = null
+    private var tijiaoTime: String = ""
+    private var height: String? = null
+    private var weight: String? = null
+    private var age: String? = null
+    private var gender: String? = null
 
     /**
      * 定时任务
@@ -64,9 +72,8 @@ class MainActivity : BaseActivity(), Handler.Callback,
         return R.layout.activity_main
     }
 
-    override fun initData() {
+    private fun initView() {
         GifSpUtils.putValue(this, GifSpUtils.start_time, TimeUtil.getCurrTimers())
-        mSeekBar = findViewById<View>(R.id.seekbar) as SeekBarHint
         curSelDate = TimeUtil.getCurrentDate()
         calenderView = BeforeOrAfterCalendarView(this)
         movement_records_calender_ll!!.addView(calenderView)
@@ -77,17 +84,35 @@ class MainActivity : BaseActivity(), Handler.Callback,
             commSubmit()
         }
     }
+
+    override fun initData() {
+        mSeekBar = findViewById<View>(R.id.seekbar) as SeekBarHint
+        val frist_app = GifSpUtils.getValue(this, GifSpUtils.frist_app, true)
+        if (frist_app) {
+            WindowUtils.showQuXiaoDialog(this, this)
+        } else {
+            this.height =GifSpUtils.getValue(this, GifSpUtils.height, "")
+            this.weight =GifSpUtils.getValue(this, GifSpUtils.weight, "")
+            this.age = GifSpUtils.getValue(this, GifSpUtils.age, "")
+            this.gender =GifSpUtils.getValue(this, GifSpUtils.gender, "")
+            initView()
+            initListener()
+        }
+    }
+
     private fun commSubmit() {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
         builder.setTitle("Hint").setIcon(R.mipmap.ic_launcher)
             .setMessage("Are you sure to submit?")
-         .setPositiveButton("Confirm") { _, _ -> // TODO Auto-generated method stub
-             val beforeDateListByNow = TimeUtil.getBeforeDateListByNow()
-             getYesData(beforeDateListByNow[6])
-        }.setNeutralButton("Cancel") { _, _ -> // TODO Auto-generated method stub
-        }
+            .setPositiveButton("Confirm") { _, _ -> // TODO Auto-generated method stub
+                val beforeDateListByNow = TimeUtil.getBeforeDateListByNow()
+                tijiaoTime = beforeDateListByNow[6]
+                getYesData(tijiaoTime!!)
+            }.setNeutralButton("Cancel") { _, _ -> // TODO Auto-generated method stub
+            }
         builder.create().show()
     }
+
     override fun onStart() {
         // TODO Auto-generated method stub
         super.onStart()
@@ -100,7 +125,7 @@ class MainActivity : BaseActivity(), Handler.Callback,
         }
     }
 
-    override fun initListener() {
+    private fun initListener() {
         calenderView!!.setOnBoaCalenderClickListener(object :
             BeforeOrAfterCalendarView.BoaCalenderClickListener {
             override fun onClickToRefresh(position: Int, curDate: String) {
@@ -153,14 +178,15 @@ class MainActivity : BaseActivity(), Handler.Callback,
         if (StepCountCheckUtil.isSupportStepCountSensor(this)) {
             getRecordList()
             is_support_tv.visibility = View.GONE
-            Submit.isClickable=true
+            Submit.isClickable = true
             setDatas()
             setupService()
         } else {
             movement_total_steps_tv.text = "0"
             is_support_tv!!.visibility = View.VISIBLE
-            Submit.isClickable=false
+            Submit.isClickable = false
         }
+
     }
 
     override fun onRequestPermissionsResult(
@@ -174,7 +200,7 @@ class MainActivity : BaseActivity(), Handler.Callback,
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                     startStepService()
                 } else {
-                    Submit.isClickable=false
+                    Submit.isClickable = false
                     Toast.makeText(
                         this,
                         "Please allow access to fitness information, otherwise we will not be able to count steps for you~",
@@ -245,22 +271,63 @@ class MainActivity : BaseActivity(), Handler.Callback,
             //获取全局的步数
             movement_total_steps_tv.text = steps.toString()
             //计算总公里数
-            movement_total_km_tv.text = steps?.let { countTotalKM(it) }
+            movement_total_km_tv.text = steps?.let { countTotalKM(it, height!!.toInt()) }
+
+            val beforeDateListByNow = TimeUtil.getBeforeDateListByNow()
+            tijiaoTime = beforeDateListByNow[6]
+            val start_step = GifSpUtils.getValue(this, tijiaoTime!!, 0)
+            val step = steps?.minus(start_step)
+            tijiao_total_steps_tv.text = step.toString()
+
         } else {
             //获取全局的步数
             movement_total_steps_tv.text = "0"
             //计算总公里数
             movement_total_km_tv.text = "0"
+            tijiao_total_steps_tv.text = "0"
         }
 
         //设置时间
         val time = TimeUtil.getWeekStr(curSelDate)
         movement_total_km_time_tv.text = time
         movement_total_steps_time_tv.text = time
-
+        tijiao_total_steps_time_tv.text = time
     }
-
-    fun loaderZuiYou(activity: Activity?, id: String, date: String, step: Int, start: String, end: String, distance: String, pain: Int) {
+    fun hasNetWork(context: Context): Boolean {
+        val activeNetworkInfo = (context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).activeNetworkInfo
+        return activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting
+    }
+    fun isNetworkAvailable(context: Context): Boolean {
+        val connectivity = context.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (connectivity != null) {
+            val info: NetworkInfo? = connectivity.activeNetworkInfo
+            if (info != null && info.isConnected()) {
+                if (info.getState() === NetworkInfo.State.CONNECTED) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    fun loaderZuiYou(
+        activity: Activity?,
+        id: String,
+        date: String,
+        step: Int,
+        start: String,
+        end: String,
+        distance: String,
+        pain: Int,
+        tijiaoTime: String
+    ) {
+        if (!hasNetWork(this)) {
+            Toast.makeText(
+                activity,
+                "Unable to connect the server! Please check your network.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
         val jsonObject = JSONObject()
         try {
             jsonObject.put("ids", id)
@@ -270,6 +337,10 @@ class MainActivity : BaseActivity(), Handler.Callback,
             jsonObject.put("Start", start)
             jsonObject.put("End", end)
             jsonObject.put("Distance", distance)
+            jsonObject.put("Height", height)
+            jsonObject.put("Weight", weight)
+            jsonObject.put("Sex", gender)
+            jsonObject.put("Age", age)
         } catch (e: JSONException) {
             e.printStackTrace()
         }
@@ -280,31 +351,50 @@ class MainActivity : BaseActivity(), Handler.Callback,
         } catch (e: UnsupportedEncodingException) {
             e.printStackTrace()
         }
-        HttpUtils.getClient().post(activity, "https://pedometer.ngrok.io/step/", entity, "application/json",
-            object :
-                AsyncHttpResponseHandler() {
-                override fun onSuccess(statusCode: Int, headers: Array<Header>, responseBody: ByteArray) {
-                    try {
-                        val result = JSONObject(String(responseBody))
-                      //  is_succtext.text = Html.fromHtml(String(responseBody))
-                        is_succtext.text =result.optString("feedback")
-                        activity?.let {
-                            GifSpUtils.putValue(it, GifSpUtils.start_text, result.optString("feedback"))
+        HttpUtils.getClient()
+            .post(activity, "https://pedometer.ngrok.io/step/", entity, "application/json",
+                object :
+                    AsyncHttpResponseHandler() {
+                    override fun onSuccess(
+                        statusCode: Int,
+                        headers: Array<Header>,
+                        responseBody: ByteArray
+                    ) {
+                        try {
+                            val result = JSONObject(String(responseBody))
+                            val jsonObject = result.optJSONObject("data")
+                            //  is_succtext.text = Html.fromHtml(String(responseBody))
+                            is_succtext.text = jsonObject.optString("feedback")
+                            activity?.let {
+                                GifSpUtils.putValue(
+                                    it,
+                                    GifSpUtils.start_text,
+                                    jsonObject.optString("feedback")
+                                )
+                                val value = GifSpUtils.getValue(it, tijiaoTime, 0)
+                                val mainstep = value + step
+                                GifSpUtils.putValue(it, tijiaoTime, mainstep!!)
+                                tijiao_total_steps_tv.text = "0"
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     }
-                }
 
-                override fun onFailure(statusCode: Int, headers: Array<Header>, responseBody: ByteArray, error: Throwable) {
-                    error.printStackTrace()
-                    is_succtext.text = "Unable to connect the server!"
-                }
-            })
+                    override fun onFailure(
+                        statusCode: Int,
+                        headers: Array<Header>,
+                        responseBody: ByteArray,
+                        error: Throwable
+                    ) {
+                        error.printStackTrace()
+                        is_succtext.text = "Unable to connect the server!"
+                    }
+                })
     }
 
-    private fun getYesData(time: String) {
-        if (progressNum==0){
+    private fun getYesData(tijiaoTime: String) {
+        if (progressNum == 0) {
             Toast.makeText(
                 this,
                 "Please select a value between 1-100. 1: very good, do not feel pain; 100: extremely pain.",
@@ -313,27 +403,26 @@ class MainActivity : BaseActivity(), Handler.Callback,
             return
         }
         //查询昨天的数据
-        val stepEntity = stepDataDao!!.getCurDataByDate(time)
+        val stepEntity = stepDataDao!!.getCurDataByDate(tijiaoTime)
         if (stepEntity != null) {
             val steps = stepEntity.steps?.let { Integer.parseInt(it) }
             //获取全局的步数
             val toString = steps.toString()
             val start_time = GifSpUtils.getValue(this, GifSpUtils.start_time, "")
-            val start_step = GifSpUtils.getValue(this, GifSpUtils.start_step, 0)
+            val start_step = GifSpUtils.getValue(this, tijiaoTime, 0)
             val step = steps?.minus(start_step)
 
-            GifSpUtils.putValue(this, GifSpUtils.start_step, steps!!)
-            val let = step?.let { countTotalKM(it) }
+            val let = step?.let { countTotalKM(it, height!!.toInt()) }
             //上传数据
             loaderZuiYou(
                 this,
                 TimeUtil.getPhoneSign(this)!!,
-                TimeUtil.changeFormatDate(time)!!,
+                TimeUtil.changeFormatDate(tijiaoTime)!!,
                 step!!,
                 start_time!!,
                 TimeUtil.getCurrTimers()!!,
                 let!!,
-                progressNum
+                progressNum, tijiaoTime
             )
         } else {
             Toast.makeText(this, "Today's data is unavailable", Toast.LENGTH_SHORT).show()
@@ -348,8 +437,8 @@ class MainActivity : BaseActivity(), Handler.Callback,
      * @param steps 用户当前步数
      * @return
      */
-    private fun countTotalKM(steps: Int): String {
-        val totalMeters = steps * 0.7
+    private fun countTotalKM(steps: Int, height: Int): String {
+        val totalMeters = steps * height * 0.004
         //保留两位有效数字
         return df.format(totalMeters / 1000)
     }
@@ -383,7 +472,14 @@ class MainActivity : BaseActivity(), Handler.Callback,
                     //设置的步数
                     movement_total_steps_tv.text = steps.toString()
                     //计算总公里数
-                    movement_total_km_tv.text = countTotalKM(steps)
+                    movement_total_km_tv.text = countTotalKM(steps, height!!.toInt())
+
+
+                    val beforeDateListByNow = TimeUtil.getBeforeDateListByNow()
+                    tijiaoTime = beforeDateListByNow[6]
+                    val start_step = GifSpUtils.getValue(this, tijiaoTime!!, 0)
+                    val step = steps?.minus(start_step)
+                    tijiao_total_steps_tv.text = step.toString()
                 }
         }
         return false
@@ -396,8 +492,22 @@ class MainActivity : BaseActivity(), Handler.Callback,
     }
 
     override fun onHintTextChanged(seekBarHint: SeekBarHint?, progress: Int): String {
-        progressNum=progress
+        progressNum = progress
         poptext.text = "pain: $progress"
         return "p: $progress"
+    }
+
+    override fun onSucces(height: String?, weight: String?, age: String?, gender: String?) {
+        GifSpUtils.putValue(this, GifSpUtils.frist_app, false)
+        GifSpUtils.putValue(this, GifSpUtils.height, height)
+        GifSpUtils.putValue(this, GifSpUtils.weight, weight)
+        GifSpUtils.putValue(this, GifSpUtils.age, age)
+        GifSpUtils.putValue(this, GifSpUtils.gender, gender)
+        this.height = height
+        this.weight = weight
+        this.age = age
+        this.gender = gender
+        initView()
+        initListener()
     }
 }
